@@ -8,12 +8,14 @@ const kerning = 1
 let lines = []
 
 function setup() {
-    initP5(false)
+    // initP5(false)
+    const canvas = createCanvas(windowWidth, windowHeight)
+    canvas.elt.style.display = 'none'
     initPaper(true)
     noLoop()
 
     targetLines = max(round(4 * height / width), 4)
-    
+
     initGui()
     rerun()
 }
@@ -62,7 +64,6 @@ function drawText() {
 function makeDisplayed(textGroup) {
     let scaler = min((width - border * 2) / allText.bounds.width, (height - border * 2) / allText.bounds.height)
     scaler = min(scaler, 10)
-    print(scaler)
     textGroup.scale(scaler, scaler)
     textGroup.fillColor = 'black'
     if (params.rounded) {
@@ -113,23 +114,20 @@ function makeChar(letter, x) {
 
 function editChar(char) {
     char.children.forEach(m => {
-        let customRotation = rotationFolder.rotation
-        if (rotationFolder.randomize > noise(m.data.id)) {
-            customRotation *= noise(m.data.id * 5) * 2 - 1
-        }
+        const name = m.data.name
+        m.pivot = m.bounds[params.anchor]
+
+        const scl = scaleFolder[name] + 1
+        m.scale(scl, scl)
+
         if (rotationFolder.repeat > 1) {
             for (let i = 1; i < rotationFolder.repeat; i++) {
                 const clone = m.clone()
                 clone.position = m.position
-                clone.rotate(i * customRotation)
+                clone.rotate(i * rotationFolder[name] / rotationFolder.repeat)
                 char.addChild(clone)
             }
-        } else m.rotate(customRotation)
-    })
-    char.children.forEach(m => {
-        const name = m.data.name
-        const scl = scaleFolder[name] * (1 + scaleFolder.randomize * (noise(m.data.id * 10) * 2 - 1))
-        m.scale(scl, scl)
+        } else m.rotate(rotationFolder[name])
     })
 }
 
@@ -138,51 +136,68 @@ function editChar(char) {
 // ----------------- GUI -----------------------
 // ---------------------------------------------
 
-const params = {
-    rounded: false,
-    stroke: false,
-    language: 'HEBREW'
-}
-const scaleFolder = {
-    randomize: 0,
-    D: 1,
-    E: 1,
-    J: 1,
-    I: 1,
-    V: 1,
-    K: 1
-}
-const rotationFolder = {
-    randomize: 0,
-    rotation: 0,
-    repeat: 1
+let params = {}, scaleFolder = {}, rotationFolder = {}
+function initGuiData() {
+    params.rounded = false
+    params.stroke = false
+    params.language = 'HEBREW'
+    params.anchor = 'topLeft'
+
+    scaleFolder.D = 0
+    scaleFolder.E = 0
+    scaleFolder.J = 0
+    scaleFolder.I = 0
+    scaleFolder.V = 0
+    scaleFolder.K = 0
+
+    rotationFolder.repeat = 1
+    rotationFolder.D = 0
+    rotationFolder.E = 0
+    rotationFolder.J = 0
+    rotationFolder.I = 0
+    rotationFolder.V = 0
+    rotationFolder.K = 0
 }
 
 function initGui() {
+    initGuiData()
     const gui = new dat.GUI();
 
     gui.add(params, 'stroke').onChange(drawText)
     gui.add(params, 'rounded').onChange(rerun)
     gui.add(params, 'language', ['HEBREW', 'ENGLISH']).onChange(newLanguage => {
-        if (newLanguage == 'HEBREW') 
+        if (newLanguage == 'HEBREW')
             txt = "עטלף אבק נס דרך מזגן שהתפוצץ כי חם"
         else txt = 'the quick brown fox jumps over the lazy dog'
         rerun()
     })
+    gui.add(params, 'anchor', ['topLeft', 'topRight', 'bottomLeft', 'bottomRight', 'center']).onChange(drawText)
 
     const scaleFolderGui = gui.addFolder('Scale')
-    scaleFolderGui.add(scaleFolder, 'randomize', 0, 1, 0.01).onChange(drawText)
-    scaleFolderGui.add(scaleFolder, 'D', 0.1, 2, 0.1).onChange(drawText)
-    scaleFolderGui.add(scaleFolder, 'E', 0.1, 2, 0.1).onChange(drawText)
-    scaleFolderGui.add(scaleFolder, 'J', 0.1, 2, 0.1).onChange(drawText)
-    scaleFolderGui.add(scaleFolder, 'I', 0.1, 2, 0.1).onChange(drawText)
-    scaleFolderGui.add(scaleFolder, 'V', 0.1, 2, 0.1).onChange(drawText)
-    scaleFolderGui.add(scaleFolder, 'K', 0.1, 2, 0.1).onChange(drawText)
+    scaleFolderGui.add(scaleFolder, 'D', -1, 1, 0.1).onChange(drawText)
+    scaleFolderGui.add(scaleFolder, 'E', -1, 1, 0.1).onChange(drawText)
+    scaleFolderGui.add(scaleFolder, 'I', -1, 1, 0.1).onChange(drawText)
+    scaleFolderGui.add(scaleFolder, 'J', -1, 1, 0.1).onChange(drawText)
+    scaleFolderGui.add(scaleFolder, 'K', -1, 1, 0.1).onChange(drawText)
+    scaleFolderGui.add(scaleFolder, 'V', -1, 1, 0.1).onChange(drawText)
 
     const rotationFolderGui = gui.addFolder('Rotation')
-    rotationFolderGui.add(rotationFolder, 'rotation', -180, 180, 1).onChange(drawText)
     rotationFolderGui.add(rotationFolder, 'repeat', 1, 10, 1).onChange(drawText)
-    rotationFolderGui.add(rotationFolder, 'randomize', 0, 1, 0.01).onChange(drawText)
+    rotationFolderGui.add(rotationFolder, 'D', -180, 180, 1).onChange(drawText)
+    rotationFolderGui.add(rotationFolder, 'E', -180, 180, 1).onChange(drawText)
+    rotationFolderGui.add(rotationFolder, 'I', -180, 180, 1).onChange(drawText)
+    rotationFolderGui.add(rotationFolder, 'J', -180, 180, 1).onChange(drawText)
+    rotationFolderGui.add(rotationFolder, 'K', -180, 180, 1).onChange(drawText)
+    rotationFolderGui.add(rotationFolder, 'V', -180, 180, 1).onChange(drawText)
+
+    // add reset button
+    gui.add({
+        reset: () => {
+            gui.destroy()
+            initGui()
+            rerun()
+        }
+    }, 'reset').name('Reset')
 }
 
 

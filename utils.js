@@ -10,16 +10,16 @@ const timeout = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const array2d = (w, h, fill = (i,j)=>{}) => Array.from({length: h}, (_, i) => Array.from({length: w}, (_, j) => fill(i,j)))
 const sum = (arr) => arr.reduce((a,b) => a + b, 0)
 
-Object.prototype.filter = function filter(func) {
-    const newObj = {}
-    for (let key in this) {
-        if (func(this[key], key)) newObj[key] = this[key]
-    }
-    return newObj
-}
-Object.prototype.length = function length() {
-    return Object.keys(this).length
-}
-Object.prototype.getKey = function getKey(i) {
-    return Object.keys(this)[i]
-}
+// Object.prototype.filter = function filter(func) {
+//     const newObj = {}
+//     for (let key in this) {
+//         if (func(this[key], key)) newObj[key] = this[key]
+//     }
+//     return newObj
+// }
+// Object.prototype.length = function length() {
+//     return Object.keys(this).length
+// }
+// Object.prototype.getKey = function getKey(i) {
+//     return Object.keys(this)[i]
+// }
