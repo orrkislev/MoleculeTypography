@@ -1,4 +1,4 @@
-let txt = "אז מה עושים עכשיו?";
+let txt = "עטלף אבק נס דרך מזגן שהתפוצץ כי חם";
 const border = 100
 const spaceSize = 5
 const lineHeight = 12
@@ -12,7 +12,8 @@ function setup() {
     initPaper(true)
     noLoop()
 
-    targetLines = max(round(4 * height / width), 1)
+    targetLines = max(round(4 * height / width), 4)
+    
     initGui()
     rerun()
 }
@@ -28,9 +29,9 @@ function keyPressed() {
     if (key == 'Backspace') {
         txt = txt.slice(0, -1)
     }
-    if (key in letters || key == ' ') {
-        txt += key
-    }
+    if (key == ' ') txt += key
+    const char = getRightKey(key)
+    if (char) txt += char
     drawText()
 }
 
@@ -48,7 +49,7 @@ function drawText() {
     words.forEach((word, i) => {
         word.position = p(x, y)
         allText.addChild(word)
-        x -= word.bounds.width + spaceSize
+        x = (word.bounds.width + spaceSize) * (params.language == 'ENGLISH' ? 1 : -1)
         if ((i + 1) % wordsPerLine == 0) {
             y += lineHeight
             x = 0
@@ -60,12 +61,13 @@ function drawText() {
 
 function makeDisplayed(textGroup) {
     let scaler = min((width - border * 2) / allText.bounds.width, (height - border * 2) / allText.bounds.height)
-    scaler = min(scaler, 100)
+    scaler = min(scaler, 10)
+    print(scaler)
     textGroup.scale(scaler, scaler)
     textGroup.fillColor = 'black'
-    if (params.rounded > 0) {
+    if (params.rounded) {
         textGroup.strokeColor = 'black'
-        textGroup.strokeWidth = .1 * scaler * params.rounded
+        textGroup.strokeWidth = .1 * scaler
     }
     if (params.stroke) {
         textGroup.fillColor = 'white'
@@ -83,9 +85,9 @@ function makeWord(word) {
         const letter = word[i]
         const char = makeChar(letter, x)
         wordGroup.addChild(char)
-        x -= char.bounds.width + kerning
+        x += (char.bounds.width + kerning) * (params.language == 'ENGLISH' ? 1 : -1)
     }
-    const pivotX = wordGroup.bounds.right
+    const pivotX = wordGroup.bounds[params.language == 'ENGLISH' ? 'left' : 'right']
     const pivotY = wordGroup.children.reduce((a, b) => {
         if (a.pivot.y < b.pivot.y) return a
         return b
@@ -99,7 +101,7 @@ let chars = []
 let allMolecules = []
 function makeChar(letter, x) {
     const char = letters[letter].clone()
-    char.position = p(x - char.bounds.width, 0)
+    char.position = p(x - (params.language == 'ENGLISH' ? 0 : char.bounds.width), 0)
     char.children.forEach(m => {
         m.data.id = allMolecules.length
         allMolecules.push(m)
@@ -110,22 +112,6 @@ function makeChar(letter, x) {
 }
 
 function editChar(char) {
-    if (params.balagan > 0) {
-        const left = char.bounds.left
-        const right = char.bounds.right
-        const top = char.bounds.top
-        const bottom = char.bounds.bottom
-
-        const children = char.children
-        for (let j = 0; j < children.length * params.balagan; j++) {
-            const child = children[j]
-            // child.position = p(random(left, right), random(top, bottom))
-            child.position = p(
-                noise(child.data.id * 7) * (right - left) + left,
-                noise(child.data.id * 8 + 1) * (bottom - top) + top
-            )
-        }
-    }
     char.children.forEach(m => {
         let customRotation = rotationFolder.rotation
         if (rotationFolder.randomize > noise(m.data.id)) {
@@ -153,9 +139,9 @@ function editChar(char) {
 // ---------------------------------------------
 
 const params = {
-    rounded: 0,
+    rounded: false,
     stroke: false,
-    balagan: 0
+    language: 'HEBREW'
 }
 const scaleFolder = {
     randomize: 0,
@@ -175,9 +161,14 @@ const rotationFolder = {
 function initGui() {
     const gui = new dat.GUI();
 
-    gui.add(params, 'balagan', 0, 1, 0.01).onChange(drawText)
     gui.add(params, 'stroke').onChange(drawText)
-    gui.add(params, 'rounded', 0, 1, 0.01).onChange(rerun)
+    gui.add(params, 'rounded').onChange(rerun)
+    gui.add(params, 'language', ['HEBREW', 'ENGLISH']).onChange(newLanguage => {
+        if (newLanguage == 'HEBREW') 
+            txt = "עטלף אבק נס דרך מזגן שהתפוצץ כי חם"
+        else txt = 'the quick brown fox jumps over the lazy dog'
+        rerun()
+    })
 
     const scaleFolderGui = gui.addFolder('Scale')
     scaleFolderGui.add(scaleFolder, 'randomize', 0, 1, 0.01).onChange(drawText)
@@ -201,17 +192,28 @@ function initGui() {
 
 let molecules = {}
 function createMolecules() {
-    const largeRadius = new paper.Size(params.rounded);
-    const smallRadius = new paper.Size(params.rounded * .5);
+    const largeRadius = new paper.Size(params.rounded ? 1 : 0);
+    const smallRadius = new paper.Size(params.rounded ? .5 : 0);
 
     const DRect = new paper.Rectangle(p(0, 0), p(2, 2));
     const D = new Path.Rectangle(DRect, largeRadius);
     const ERect = new paper.Rectangle(p(0, 0), p(10, 2));
+    const ERect2 = new paper.Rectangle(p(0, 0), p(2, 10));
     const E = new Path.Rectangle(ERect, largeRadius);
+    const E2 = new Path.Rectangle(ERect2, largeRadius);
+    E2.data = { name: 'E' }
     const JRect = new paper.Rectangle(p(0, 0), p(1, 2));
+    const JRect2 = new paper.Rectangle(p(0, 0), p(2, 1));
     const J = new Path.Rectangle(JRect, smallRadius);
+    const J2 = new Path.Rectangle(JRect2, smallRadius);
+    J2.data = { name: 'J' }
+
     const IRect = new paper.Rectangle(p(0, 0), p(1, 4));
+    const IRect2 = new paper.Rectangle(p(0, 0), p(4, 1));
     const I = new Path.Rectangle(IRect, smallRadius);
+    const I2 = new Path.Rectangle(IRect2, smallRadius);
+    I2.data = { name: 'I' }
+
     const V = new Path([p(0, 0), p(1, 0), p(5, 4), p(4, 4)])
     V.closed = true
     const K = new Path([p(0, 0), p(2, -2), p(3, -2), p(1, 0)])
@@ -221,188 +223,12 @@ function createMolecules() {
     Object.keys(molecules).forEach(m => {
         molecules[m].data = { name: m }
     })
+
+    molecules.E2 = E2
+    molecules.J2 = J2
+    molecules.I2 = I2
 }
 
-hebrewData = {
-    'א': [
-        ['D', 0, 0],
-        ['D', 2, 0],
-        ['J', 1, 2],
-        ['D', 1, 4],
-        ['V', 3, 2],
-        ['K', 6, 4],
-        ['D', 7, 0],
-    ],
-    'ב': [
-        ['E', 0, 0],
-        ['E', 0, 4],
-        ['J', 10, 4],
-        ['K', 7, 4],
-    ],
-    'ג': [
-        ['D', 0, 0],
-        ['K', 0, 6],
-        ['V', 1, 2],
-    ],
-    'ד': [
-        ['E', 0, 0],
-        ['K', 7, 4, true],
-        ['J', 9, 4,],
-    ],
-    'ה': [
-        ['E', 0, 0],
-        ['I', 9, 2],
-        ['J', 0, 4,],
-    ],
-    'ו': [
-        ['D', 0, 0],
-        ['I', 1, 2],
-    ],
-    'ז': [
-        ['D', 0, 0],
-        ['D', 2, 0],
-        ['K', 1, 4, true],
-        ['J', 3, 4],
-    ],
-    'ח': [
-        ['E', 0, 0],
-        ['I', 0, 2],
-        ['I', 9, 2],
-    ],
-    'ט': [
-        ['D', 4, 0],
-        ['D', 6, 0],
-        ['E', 0, 4],
-        ['I', 0, 0],
-        ['K', 7, 4, true],
-    ],
-    'י': [
-        ['D', 0, 0],
-        ['J', 1, 2],
-    ],
-    'כ': [
-        ['E', 0, 0],
-        ['E', 0, 4],
-        ['J', 9, 2],
-    ],
-    'ך': [
-        ['E', 0, 0],
-        ['I', 9, 2],
-        ['I', 9, 6],
-    ],
-    'ל': [
-        ['D', 0, 0],
-        ['D', 7, 8],
-        ['E', 0, 4],
-        ['J', 0, 2],
-        ['K', 7, 8],
-    ],
-    'מ': [
-        ['D', 5, 4],
-        ['D', 7, 4],
-        ['E', 1, 0],
-        ['J', 0, 0],
-        ['I', 1, 2],
-        ['K', 8, 4],
-    ],
-    'ם': [
-        ['E', 1, 0],
-        ['E', 1, 4],
-        ['J', 0, 0],
-        ['J', 1, 2],
-        ['J', 10, 2],
-    ],
-    'נ': [
-        ['D', 0, 0],
-        ['D', 0, 4],
-        ['D', 2, 4],
-        ['K', 1, 4, true],
-    ],
-    'ן': [
-        ['D', 0, 0],
-        ['I', 1, 2],
-        ['I', 1, 6],
-    ],
-    'ס': [
-        ['D', 0, 4],
-        ['D', 2, 4],
-        ['D', 4, 4],
-        ['D', 6, 4],
-        ['E', 0, 0],
-        ['J', 0, 2],
-        ['K', 7, 4],
-    ],
-    'ע': [
-        ['D', 0, 0],
-        ['D', 8, 0],
-        ['E', 0, 4],
-        ['J', 9, 2],
-        ['K', 1, 4, true],
-    ],
-    'פ': [
-        ['D', 0, 6],
-        ['D', 2, 6],
-        ['D', 4, 6],
-        ['E', 0, 0],
-        ['J', 0, 2],
-        ['V', 5, 2, true],
-    ],
-    'ף': [
-        ['D', 0, 0],
-        ['D', 2, 0],
-        ['D', 4, 0],
-        ['D', 6, 0],
-        ['I', 7, 2],
-        ['I', 7, 6],
-        ['K', 0, 4, true],
-    ],
-    'צ': [
-        ['D', 0, 0],
-        ['D', 2, 0],
-        ['D', 8, 0],
-        ['E', 0, 4],
-        ['K', 7, 4],
-        ['K', 3, 4, true],
-    ],
-    'ץ': [
-        ['D', 0, 0],
-        ['D', 2, 0],
-        ['D', 5, 0],
-        ['I', 5, 6],
-        ['K', 4, 4],
-        ['V', 1, 2],
-    ],
-    'ק': [
-        ['D', 7, 4],
-        ['D', 0, 8],
-        ['E', 0, 0],
-        ['I', 0, 4],
-        ['K', 7, 4],
-    ],
-    'ר': [
-        ['E', 0, 0],
-        ['I', 9, 2],
-    ],
-    'ש': [
-        ['D', 0, 0],
-        ['D', 2, 4],
-        ['D', 4, 0],
-        ['D', 4, 4],
-        ['D', 6, 4],
-        ['D', 8, 0],
-        ['D', 8, 4],
-        ['J', 5, 2],
-        ['J', 9, 2],
-        ['K', 0, 4, true],
-    ],
-    'ת': [
-        ['D', 0, 4],
-        ['D', 2, 4],
-        ['E', 1, 0],
-        ['I', 10, 2],
-        ['K', 1, 4, true],
-    ],
-}
 
 symbolData = {
     '?': [
@@ -435,20 +261,22 @@ symbolData = {
 let letters = {}
 function createLetters() {
     letters = {}
-    const allData = { ...hebrewData, ...symbolData }
+    const allData = { ...hebrewData, ...symbolData, ...englishData }
     Object.keys(allData).forEach(letter => {
         let letterGroup = new Group();
         for (const [name, x, y, flipped] of allData[letter]) {
-            const molecule = molecules[name].clone();
+            let molecule = molecules[name].clone();
             molecule.translate(x, y);
             if (flipped) molecule.scale(-1, 1);
-            molecule.pivot = molecule.bounds.topRight
+            // molecule.pivot = params.language == 'ENGLISH' ? molecule.bounds.topLeft : molecule.bounds.topRight
             letterGroup.addChild(molecule);
             letterGroup.pivot = p(0, 0);
         }
         letters[letter] = letterGroup;
     })
 
-    letters['ל'].pivot = p(0, 4)
-    letters['.'].pivot = p(0, -4)
+    if (params.language == 'HEBREW') {
+        letters['ל'].pivot = p(0, 4)
+        letters['.'].pivot = p(0, -4)
+    }
 }
